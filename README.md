@@ -12,7 +12,7 @@ Usage (Linux):
 
 Usage (Windows):
 ```
-cyberdropdl <cyberdrop link>
+cyberdropdl.exe <cyberdrop link>
 ```
 
 Build:
