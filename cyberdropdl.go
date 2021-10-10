@@ -14,6 +14,18 @@ import (
 var resp *http.Response
 var cyberlink string
 
+func removeDuplicateStr(strSlice []string) []string {
+	allKeys := make(map[string]bool)
+	list := []string{}
+	for _, item := range strSlice {
+		if _, value := allKeys[item]; !value {
+			allKeys[item] = true
+			list = append(list, item)
+		}
+	}
+	return list
+}
+
 func retrieveLinks(cyberlink string) (links []string) {
 	// Request to cyberdrop
 	cyberreq, err := http.Get(cyberlink)
@@ -40,28 +52,30 @@ func retrieveLinks(cyberlink string) (links []string) {
 }
 
 func request(cyberlink string, links []string) {
+	links = removeDuplicateStr(links)
 	for iter, link := range links {
 		fmt.Println("---------------------------------------------------------")
-		// Starting request for file
-		fmt.Println(fmt.Sprintf("Starting request for %s(%d)", cyberlink[24:], iter))
-		resp, err := http.Get(strings.Replace(link, " ", "%20", -1))
-		if err != nil {
-			fmt.Println("Request error")
-			fmt.Println(err)
-			break
-		}
-		time.Sleep(1)
-		defer resp.Body.Close()
-
 		// Seems painful here too idk
 		if strings.Contains(link, "href") == true {
 			reSpecial := regexp.MustCompile(`(https:\/\/fs([\w\-_]+(?:(?:\.[\w\-_]+)+))([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-\@?^=%&amp;/~\+#])?)`)
 			link := reSpecial.FindString(link)
+
+			// Starting request for file
+			fmt.Println(fmt.Sprintf("Starting request for %s(%d)", cyberlink[24:], iter))
+			resp, err := http.Get(link)
+			if err != nil {
+				fmt.Println("Request error")
+				fmt.Println(err)
+				break
+			}
+			defer resp.Body.Close()
+
 			download(link, iter, resp)
 		} else {
 			download(link, iter, resp)
 		}
 	}
+	time.Sleep(3)
 }
 
 func download(link string, iter int, resp *http.Response) {
