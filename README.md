@@ -3,6 +3,8 @@ A simple zero-dependency downloader written in Go for cyberdrop.me
 
 This is a project made purely for fun, as a test for my Go skills and as a joking challenge for me to not use any dependency.
 
+Feel free to issue a problem or give an advice.
+
 Usage (Linux):
 ```
 ./cyberdropdl <cyberdrop link>
@@ -10,7 +12,7 @@ Usage (Linux):
 
 Usage (Windows):
 ```
-cyberdropdl <cyberdrop link>
+cyberdropdl.exe <cyberdrop link>
 ```
 
 Build:
