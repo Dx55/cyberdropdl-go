@@ -75,7 +75,7 @@ func request(cyberlink string, links []string) {
 			download(link, iter, resp)
 		}
 	}
-	time.Sleep(3)
+	time.Sleep(1)
 }
 
 func download(link string, iter int, resp *http.Response) {
