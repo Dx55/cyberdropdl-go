@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -13,6 +14,12 @@ import (
 
 var resp *http.Response
 var cyberlink string
+var tr = &http.Transport{
+	MaxIdleConns:        30,
+	MaxIdleConnsPerHost: 30,
+	MaxConnsPerHost:     30,
+}
+var netClient = &http.Client{Transport: tr}
 
 func removeDuplicateStr(strSlice []string) []string {
 	allKeys := make(map[string]bool)
@@ -54,28 +61,30 @@ func retrieveLinks(cyberlink string) (links []string) {
 func request(cyberlink string, links []string) {
 	links = removeDuplicateStr(links)
 	for iter, link := range links {
-		fmt.Println("---------------------------------------------------------")
 		// Seems painful here too idk
 		if strings.Contains(link, "href") == true {
 			reSpecial := regexp.MustCompile(`(https:\/\/fs([\w\-_]+(?:(?:\.[\w\-_]+)+))([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-\@?^=%&amp;/~\+#])?)`)
 			link := reSpecial.FindString(link)
 
-			// Starting request for file
-			fmt.Println(fmt.Sprintf("Starting request for %s(%d)", cyberlink[24:], iter))
-			resp, err := http.Get(link)
-			if err != nil {
-				fmt.Println("Request error")
-				fmt.Println(err)
-				break
-			}
-			defer resp.Body.Close()
+			if iter <= len(links) {
+				// Starting request for file
+				fmt.Println(fmt.Sprintf("Starting request for %s(%d)", cyberlink[23:], iter))
 
-			download(link, iter, resp)
-		} else {
-			download(link, iter, resp)
+				resp, err := netClient.Get(link)
+				if err != nil {
+					fmt.Println("Request error")
+					fmt.Println(err)
+					break
+				}
+				defer resp.Body.Close()
+
+				download(link, iter, resp)
+			} else {
+				download(link, iter, resp)
+			}
 		}
 	}
-	time.Sleep(1)
+	time.Sleep(2)
 }
 
 func download(link string, iter int, resp *http.Response) {
@@ -85,7 +94,7 @@ func download(link string, iter int, resp *http.Response) {
 
 	fmt.Println("Creating file")
 	// Creating file
-	file, err := os.Create(fmt.Sprintf("%s/%s(%d)%s", cyberlink[24:], cyberlink[24:], iter, fileFormat))
+	file, err := os.Create(fmt.Sprintf("%s/%s(%d)%s", cyberlink[23:], cyberlink[23:], iter, fileFormat))
 	if err != nil {
 		fmt.Println("Error with creating the image")
 		fmt.Println(err)
@@ -99,24 +108,44 @@ func download(link string, iter int, resp *http.Response) {
 		fmt.Println("Error when copying data from HTTP response to file")
 		fmt.Println(err)
 	}
-	fmt.Println(fmt.Sprintf("Downloaded %s(%d)%s", cyberlink[24:], iter, fileFormat))
+	fmt.Println(fmt.Sprintf("Downloaded %s(%d)%s", cyberlink[23:], iter, fileFormat))
 	fmt.Println("---------------------------------------------------------")
-	time.Sleep(1)
 }
 
-func main() {
-	// Taking input from args
-	cyberlink = os.Args[1]
-	// If directory doesn't exist, create one
-	if _, err := os.Stat(fmt.Sprintf("%s", cyberlink[24:])); os.IsNotExist(err) {
+func folderVerifier(cyberlink string) {
+	if _, err := os.Stat(fmt.Sprintf("%s", cyberlink[23:])); os.IsNotExist(err) {
 		if err != nil {
 			fmt.Println("Directory doesn't exist")
 			fmt.Println("Creating a new one...")
-			_ = os.Mkdir(fmt.Sprintf("%s", cyberlink[24:]), 0755)
+			_ = os.Mkdir(fmt.Sprintf("%s", cyberlink[23:]), 0755)
 			request(cyberlink, retrieveLinks(cyberlink))
 		}
 	} else {
 		// Starting the functions
 		request(cyberlink, retrieveLinks(cyberlink))
+	}
+}
+
+func main() {
+	// Taking input from args
+	if os.Args[1] == "-m" {
+		file, err := os.Open(os.Args[2])
+		if err != nil {
+			fmt.Println("Unable to read file")
+			fmt.Println(err)
+		}
+		defer file.Close()
+
+		line_scan := bufio.NewScanner(file)
+
+		for line_scan.Scan() {
+			cyberlink = line_scan.Text()
+			fmt.Println(cyberlink)
+			folderVerifier(cyberlink)
+		}
+	} else {
+		cyberlink = os.Args[1]
+
+		folderVerifier(cyberlink)
 	}
 }
